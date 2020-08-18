@@ -6,10 +6,8 @@ import ipaddress
 import random
 import string
 
-
 app = Flask(__name__)
-app.config['JSON_SORT_KEYS'] = False
-
+app.config['JSON_SORT_KEYS'] = False #this is cause otherwise JSON's labels are sorted alphabetically
 
 import settings
 from Endpoints.apiEndpoint import ns_endpoint
@@ -33,6 +31,7 @@ def initialize_app(flask_app):
     flask_app.register_blueprint(blueprint)
 
 
+#this function transform a row of a database in a dictionary type data
 def dict_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
@@ -40,27 +39,35 @@ def dict_factory(cursor, row):
     return d
 
 
-#genera una stringa con lettere, numeri e simboli. Usata per la chiave dello script.
-#Per togliere i simboli basta togliere string.punctuation
+#this function generates a random string with letters, numbers and symbols.
+#it's useful for the script key
 def get_random_key(length):
     key_characters = string.ascii_letters + string.digits + string.punctuation
+    # it's better to remove special characters
+    key_characters = key_characters.replace("\"", "")
+    key_characters = key_characters.replace("\'", "")
+    key_characters = key_characters.replace("`", "")
+    #it adds a random character from an array with all letters, symbol and numbers
     key = ''.join(random.choice(key_characters) for i in range(length))
     return key
 
-
-def verificaIP(ip):
+# it's used to check if an IP has the correct format
+def checkIP(ip, port):
     try:
         IP(ip)
+        if port > 65535 or port < 0:
+            return False
         return True
     except ValueError:
         return False
 
 #-------------------------------------HANDLERS--------------------------------------------#
 
+# this handles the errors for missing parameters
 @app.errorhandler(400)
 def bad_request(error):
     if not request.json:
-        parameter = 's'
+        parameter = 's' # to print the plural (Missing input parameterS)
     elif not 'username' in request.json:
         parameter = ' [\'username\']'
     elif not 'ip_address' in request.json:
@@ -75,7 +82,7 @@ def bad_request(error):
                                 'message' : message
                             }), 400)
 
-
+# this handles errors for incorrect format
 @app.errorhandler(401)
 def input_format(error):
     status = 'STATUS.INPUT_FORMAT_ERROR'
@@ -88,7 +95,7 @@ def input_format(error):
                                 'message' : message
                             }), 401)
 
-
+# this is for missing data errors
 @app.errorhandler(404)
 def not_found(error):
     status = 'STATUS.NOT_FOUND'
@@ -101,7 +108,7 @@ def not_found(error):
                                 'message' : message
                             }), 402)
 
-
+# this handle the case when someone is trying to insert the same IP twice
 @app.errorhandler(403)
 def not_allowed(error):
     status = 'STATUS.NOT_ALLOWED'
@@ -115,8 +122,10 @@ def not_allowed(error):
                             }), 403)
 
 
+# this handle the case when someone is trying to insert different IP addresses more than three times
+# in three days
 @app.errorhandler(409)
-def not_found(error):
+def conflict(error):
     status = 'STATUS.CONFLICT'
     code = 409
     message = 'Too many tries. Try again in 3 days'
@@ -143,10 +152,12 @@ def api_all():
     if type(username) != unicode or len(username) > 25:
         abort(401)
 
+    #establishes a connection with the database
     conn = sqlite3.connect('HTTP01_challenge_db.db')
     conn.row_factory = dict_factory
     cur = conn.cursor()
     query = "SELECT * FROM IP_addresses WHERE username = {}".format(username)
+    #saves all rows in a dictionary named all_ip
     all_ip = cur.execute(query).fetchall()
 
     if not all_ip:
@@ -167,55 +178,60 @@ def api_post():
     status = 'STATUS.OK'
     code = 200
     message = 'Request Accepted'
-    now = time.ctime(time.time())
 
     username = request.json['username']
-    if type(username) != unicode or len(username) > 25:
+    if type(username) != str or len(username) > 25:
         abort(401)
 
     ip_address = request.json['ip_address']
-    if not verificaIP(ip_address):
+    iport = ip_address.split(":")
+    ip_address = iport[0]
+    port = int(iport[1])
+    if not checkIP(ip_address, port):
         abort(401)
 
     conn = sqlite3.connect('HTTP01_challenge_db.db')
     conn.row_factory = dict_factory
     cur = conn.cursor()
-    query = "SELECT * FROM IP_addresses WHERE username = {}".format(username)
+
+    #it is getting the list of all ip addresses registered by the user 'user'
+    query = "SELECT * FROM IP_addresses WHERE username = '{}'".format(username)
     all_ip = cur.execute(query).fetchall()
+    print(all_ip)
     if all_ip and ip_address in all_ip:
         abort(403)
 
-    query = "SELECT * " \
-            "FROM IP_addresses " \
-            "WHERE username = {} " \
-                "AND (creation + 3 );".format(username)
-    results = cur.execute(query).fetchall()
-    if len(results) >= 3:
+    #with another query it controls if there are more than three tries in three days
+    results = cur.execute("SELECT * " \
+                        "FROM IP_addresses " \
+                        "WHERE username = '{}'" \
+                          "AND datetime(creation, '+3 day') > datetime('now')".format(username)).fetchall()
+    if request and len(results) >= 3:
         abort(409)
 
+    #setting for data values
     trusted = False
-    dataCreazione = now
-    dataVerifica = ''
-    chiave = get_random_key(25)
+    verification_date = ''
+    key = get_random_key(25)
 
-    valori = [(
+    #they are inserted into an array to be passed to cur.executemany
+    values = [(
         ip_address,
         username,
         trusted,
-        dataCreazione,
-        dataVerifica,
-        chiave,
+        verification_date,
+        key,
     )]
     conn = sqlite3.connect('HTTP01_challenge_db.db')
     cur = conn.cursor()
-    cur.executemany('INSERT INTO `IP_addresses` VALUES (?,?,?,?,?,?)', valori)
+    cur.executemany("INSERT INTO `IP_addresses` VALUES (?,?,?,DATETIME('now'),?,?)", values)
     conn.commit()
     conn.close()
 
     return jsonify({'status': status,
                     'code': code,
                     'message': message,
-                    'data': 'url_to_script'})
+                    'data': key})
 
 
 if __name__ == '__main__':
