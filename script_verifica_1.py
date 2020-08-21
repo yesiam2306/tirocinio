@@ -18,7 +18,6 @@ def get_ip_address():
 
 
 def run():
-    print(get_ip_address())
     #establishes a connection with the database
     conn = sqlite3.connect('HTTP01_challenge_db.db')
     conn.row_factory = dict_factory

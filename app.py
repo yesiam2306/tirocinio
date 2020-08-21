@@ -254,5 +254,5 @@ def api_post():
 
 
 if __name__ == '__main__':
-#    initialize_app(app)
+    initialize_app(app)
     app.run(debug= settings.FLASK_DEBUG)
