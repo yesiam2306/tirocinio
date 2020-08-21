@@ -22,6 +22,13 @@ def checkIP(ip, port):
         print("Error format in IP parameter")
         exit(1)
 
+#this function get the ip address by the system
+def get_ip_address():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    return s.getsockname()[0]
+
+
 def run():
     key = input("Insert your key: ")
 
@@ -39,7 +46,7 @@ def run():
     f.write(page_content)
     f.close()
 
-    IP = socket.gethostbyname(socket.gethostname())
+    IP = get_ip_address()
     print(IP)
     PORT = 2323
 
@@ -80,7 +87,7 @@ def run():
         print('Ongoing check...')
         print('This may take a few minutes (not more 30)')
         print('Please, be patient')
-        print("Link: u\'")
+        print("Link: ")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

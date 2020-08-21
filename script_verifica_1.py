@@ -11,9 +11,14 @@ def dict_factory(cursor, row):
     return d
 
 
-def run():
-    print(socket.gethostbyname(socket.gethostname()))
+def get_ip_address():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    return s.getsockname()[0]
 
+
+def run():
+    print(get_ip_address())
     #establishes a connection with the database
     conn = sqlite3.connect('HTTP01_challenge_db.db')
     conn.row_factory = dict_factory
