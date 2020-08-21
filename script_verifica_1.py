@@ -71,13 +71,13 @@ def run():
             # l is the list which contains all the text
             for comments in soup.findAll(text=lambda text: isinstance(text, Comment)):
                 c = comments.extract()
-            print(c)
-            print("{}".format(ip["script_key"]))
+            #print(c)
+            #print("{}".format(ip["script_key"]))
 
             # l contains the text of the page. If it's equal to the script key stored in the database
             # the verification have been successful
             if str(c) == "{}".format(ip["script_key"]):
-                print("yes")
+                #print("yes")
                 #update the row setting `verification` and `trusted` attributes
                 query = "UPDATE `IP_addresses` SET `verification` = CURRENT_DATE WHERE `script_key` = '{}'".format(
                     ip["script_key"])
@@ -86,12 +86,7 @@ def run():
                 query = "UPDATE `IP_addresses` SET `trusted` = 1 WHERE `script_key` = '{}'".format(
                     ip["script_key"])
                 cur.execute(query)
-                #conn.commit()
-                '''---debug----
-                query = "SELECT * FROM `IP_addresses`"
-                debug = cur.execute(query).fetchall()
-                print(debug)
-                #------------'''
+                conn.commit()
         else:
             print("Error")
 
