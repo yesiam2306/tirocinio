@@ -46,7 +46,10 @@ def get_random_key(length):
     # it's better to remove special characters
     key_characters = key_characters.replace("\"", "")
     key_characters = key_characters.replace("\'", "")
+    key_characters = key_characters.replace("\\", "")
     key_characters = key_characters.replace("`", "")
+    key_characters = key_characters.replace("<", "")
+    key_characters = key_characters.replace(">", "")
     #it adds a random character from an array with all letters, symbol and numbers
     key = ''.join(random.choice(key_characters) for i in range(length))
     return key
@@ -56,6 +59,7 @@ def checkIP(ip, port):
     try:
         IP(ip)
         if port > 65535 or port < 0:
+            app.logger.error("Port number not valid")
             return False
         return True
     except ValueError:
@@ -113,7 +117,7 @@ def not_found(error):
 def not_allowed(error):
     status = 'STATUS.NOT_ALLOWED'
     code = 403
-    message = 'Operation not allowed, you\'re trying to ask for same IP two times'
+    message = 'Operation not allowed, this IP is already registered'
     return make_response(jsonify(
                             {
                                 'status' : status,
@@ -185,9 +189,22 @@ def api_post():
 
     ip_address = request.json['ip_address']
     iport = ip_address.split(":")
-    ip_address = iport[0]
-    port = int(iport[1])
-    if not checkIP(ip_address, port):
+    ip = iport[0]
+    try:
+        port = iport[1]
+    except IndexError:
+        port = 2323
+        wanna_change = input("Port will be setted to 2323 by default, do you want to change it? "
+                             "(Y/n)\n")
+        while wanna_change != 'y' and wanna_change != 'Y' and wanna_change != 'n' and wanna_change != 'N':
+            print("Please click 'y' or 'n'")
+            wanna_change = input("Port will be setted to 2323 by default, do you want to change it? "
+                                 "(Y/n)\n")
+        if wanna_change == 'y' or wanna_change == 'Y':
+            port = input("Insert port: ")
+            ip_address = ip_address + ":{}".format(port)
+
+    if not checkIP(ip, int(port)):
         abort(401)
 
     conn = sqlite3.connect('HTTP01_challenge_db.db')
@@ -197,7 +214,6 @@ def api_post():
     #it is getting the list of all ip addresses registered by the user 'user'
     query = "SELECT * FROM IP_addresses WHERE username = '{}'".format(username)
     all_ip = cur.execute(query).fetchall()
-    print(all_ip)
     if all_ip and ip_address in all_ip:
         abort(403)
 
@@ -224,9 +240,12 @@ def api_post():
     )]
     conn = sqlite3.connect('HTTP01_challenge_db.db')
     cur = conn.cursor()
-    cur.executemany("INSERT INTO `IP_addresses` VALUES (?,?,?,DATETIME('now'),?,?)", values)
-    conn.commit()
-    conn.close()
+    try:
+        cur.executemany("INSERT INTO `IP_addresses` VALUES (?,?,?,DATETIME('now'),?,?)", values)
+        conn.commit()
+        conn.close()
+    except sqlite3.IntegrityError:
+        abort(403)
 
     return jsonify({'status': status,
                     'code': code,

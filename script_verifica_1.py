@@ -1,6 +1,7 @@
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 import sqlite3
+import socket
 
 #this function transform a row of a database in a dictionary type data
 def dict_factory(cursor, row):
@@ -11,6 +12,7 @@ def dict_factory(cursor, row):
 
 
 def run():
+    print(socket.gethostbyname(socket.gethostname()))
 
     #establishes a connection with the database
     conn = sqlite3.connect('HTTP01_challenge_db.db')
@@ -42,10 +44,18 @@ def run():
     for ip in to_verify:
         # the target we want to open
         url = 'http://{}'.format(ip["IP_address"])
+        try:
+            iport = ip["IP_address"].split(":")
+            PORT = int(iport[1])
+        except IndexError:
+            url = url + ':2323'
+        print(url)
 
-        # open with GET method
-        resp = requests.get(url)
-
+        try:
+            # open with GET method
+            resp = requests.get(url)
+        except requests.exceptions.ConnectionError:
+            continue
         # http_response 200 means OK status
         if resp.status_code == 200:
             print("Successfully opened the web page")
@@ -54,23 +64,24 @@ def run():
             soup = BeautifulSoup(resp.text, 'html.parser')
 
             # l is the list which contains all the text
-            l = soup.find("p")
+            for comments in soup.findAll(text=lambda text: isinstance(text, Comment)):
+                c = comments.extract()
+            print(c)
+            print("{}".format(ip["script_key"]))
 
             # l contains the text of the page. If it's equal to the script key stored in the database
             # the verification have been successful
-            if str(l) == "<p>{}</p>".format(ip["script_key"]):
-                #debug print("yes")
-
+            if str(c) == "{}".format(ip["script_key"]):
+                print("yes")
                 #update the row setting `verification` and `trusted` attributes
                 query = "UPDATE `IP_addresses` SET `verification` = CURRENT_DATE WHERE `script_key` = '{}'".format(
                     ip["script_key"])
                 cur.execute(query)
-                conn.commit()
+                #conn.commit()
                 query = "UPDATE `IP_addresses` SET `trusted` = 1 WHERE `script_key` = '{}'".format(
                     ip["script_key"])
                 cur.execute(query)
-                conn.commit()
-
+                #conn.commit()
                 '''---debug----
                 query = "SELECT * FROM `IP_addresses`"
                 debug = cur.execute(query).fetchall()
