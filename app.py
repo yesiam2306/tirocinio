@@ -65,6 +65,7 @@ def checkIP(ip, port):
     except ValueError:
         return False
 
+
 #-------------------------------------HANDLERS--------------------------------------------#
 
 # this handles the errors for missing parameters
@@ -172,7 +173,6 @@ def api_all():
                     'message' : message,
                     'data' : all_ip})
 
-
 @app.route('/api/v1.0/newIP', methods=['POST'])
 def api_post():
 
@@ -194,15 +194,7 @@ def api_post():
         port = iport[1]
     except IndexError:
         port = 2323
-        wanna_change = input("Port will be setted to 2323 by default, do you want to change it? "
-                             "(Y/n)\n")
-        while wanna_change != 'y' and wanna_change != 'Y' and wanna_change != 'n' and wanna_change != 'N':
-            print("Please click 'y' or 'n'")
-            wanna_change = input("Port will be setted to 2323 by default, do you want to change it? "
-                                 "(Y/n)\n")
-        if wanna_change == 'y' or wanna_change == 'Y':
-            port = input("Insert port: ")
-            ip_address = ip_address + ":{}".format(port)
+        message += ". Port setted to default (2323)"
 
     if not checkIP(ip, int(port)):
         abort(401)
@@ -247,10 +239,14 @@ def api_post():
     except sqlite3.IntegrityError:
         abort(403)
 
+    link = "Use the command 'git clone https://github.com/yesiam2306/tirocinio.git' to download " \
+           "the script"
+
     return jsonify({'status': status,
                     'code': code,
                     'message': message,
-                    'data': key})
+                    'key': key,
+                    'link': link})
 
 
 if __name__ == '__main__':

@@ -1,8 +1,11 @@
 import http.server
-import socketserver
 import socket
+import socketserver
 from IPy import IP
-from bs4 import BeautifulSoup, Comment
+
+
+IP_SERVER = '131.114.192.146'
+#'146.48.99.33' for virtual machine
 
 #this function transform a row of a database in a dictionary type data
 def dict_factory(cursor, row):
@@ -22,63 +25,61 @@ def checkIP(ip, port):
         print("Error format in IP parameter")
         exit(1)
 
+key = input("Insert your key: ")
+
+#it inserts the key in a paragraph of a 'index.html' file
+page_content = "<html>\
+                    <head>\
+                        <title>IP01 challenge</title>\
+                    </head>\
+                    <body>\
+                        <h3>The script was executed correctly. Please refresh your page for results.</h3>\
+                        <!--{}-->\
+                    </body>\
+                </html>".format(key)
+
 #this function get the ip address by the system
 def get_ip_address():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     return s.getsockname()[0]
 
+class MyHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        print(self.client_address[1])
+        if(self.client_address[0] == IP_SERVER):
+            print("Verification executed. Refresh your own page and check for results")
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(page_content.encode("utf-8"))
 
 def run():
-    key = input("Insert your key: ")
 
-    #it inserts the key in a paragraph of a 'index.html' file
-    page_content = "<html>\
-                        <head>\
-                            <title>IP01 challenge</title>\
-                        </head>\
-                        <body>\
-                            <h3>The script was executed correctly. Please refresh your page for results.</h3>\
-                            <!--{}-->\
-                        </body>\
-                    </html>".format(key)
-    f = open("index.html", "w")
+    """
+    f = open("auth_page.html", "w")
     f.write(page_content)
     f.close()
+    """
 
     IP = get_ip_address()
     print(IP)
     PORT = 2323
 
-    message = "IP address setted to {}, do you want to change it? (Y/n)".format(IP)
-
-    wanna_change = input(message)
+    wanna_change = input("Port will be setted to 2323 by default, do you want to change it? (Y/n)\n")
     while wanna_change != 'y' and wanna_change != 'Y' and wanna_change != 'n' and wanna_change != 'N':
         print("Please click 'y' or 'n'")
-        wanna_change = input(message)
+        wanna_change = input("Port will be setted to 2323 by default, do you want to change it? "
+                             "(Y/n)\n")
     if wanna_change == 'y' or wanna_change == 'Y':
-        insert = input("Insert IP address: ")
-
-    try:
-        iport = insert.split(":")
-        IP = iport[0]
-        PORT = int(iport[1])
-        checkIP(IP,PORT)
-    except (IndexError, UnboundLocalError):
-        wanna_change = input("Port will be setted to 2323 by default, do you want to change it? (Y/n)\n")
-        while wanna_change != 'y' and wanna_change != 'Y' and wanna_change != 'n' and wanna_change != 'N':
-            print("Please click 'y' or 'n'")
-            wanna_change = input("Port will be setted to 2323 by default, do you want to change it? "
-                                 "(Y/n)\n")
-        if wanna_change == 'y' or wanna_change == 'Y':
-            PORT = input("Insert port: ")
-            checkIP(IP,int(PORT))
+        PORT = input("Insert port: ")
+        checkIP(IP,int(PORT))
 
     # An instance of TCPServer describes a server that uses the TCP protocol to send and receive messages
     # it needs of the TCP address (IP address and a port number) and the handler
     # Passing an empty string as the ip address means that the server will be listening on
     # any network interface (all available IP addresses).
-    with socketserver.TCPServer((socket.gethostbyname(socket.gethostname()), int(PORT)), http.server.SimpleHTTPRequestHandler) as httpd:
+    with socketserver.TCPServer((IP, int(PORT)), MyHandler) as httpd:
         # serve_forever is a method on the TCPServer instance that starts the server and begins
         # listening and responding to incoming requests.
         # SimpleHTTPRequest is a default handler that search in the corrent directory a 'index.html' file
@@ -87,7 +88,8 @@ def run():
         print('Ongoing check...')
         print('This may take a few minutes (not more 30)')
         print('Please, be patient')
-        print("Link: ")
+        print("We suggest you to try to access to the following page from an external "
+              "web net (e.g. 4G): http://{}:{}".format(IP, int(PORT)))
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
