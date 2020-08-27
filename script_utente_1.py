@@ -46,13 +46,13 @@ def get_ip_address():
 
 class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
-        print(self.client_address[1])
-        if(self.client_address[0] == IP_SERVER):
-            print("Verification executed. Refresh your own page and check for results")
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(page_content.encode("utf-8"))
+        if (self.client_address[0] == IP_SERVER):
+            print("Verification executed. Refresh your own page and check for results.")
+            print("Press Ctrl+C to exit")
 
 def run():
 

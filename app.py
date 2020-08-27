@@ -154,7 +154,7 @@ def api_all():
         abort(400)
 
     username = request.json['username']
-    if type(username) != unicode or len(username) > 25:
+    if type(username) != str or len(username) > 25:
         abort(401)
 
     #establishes a connection with the database
