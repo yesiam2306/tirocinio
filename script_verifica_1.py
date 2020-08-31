@@ -78,7 +78,7 @@ def run():
             if str(c) == "{}".format(ip["script_key"]):
                 #print("yes")
                 #update the row setting `verification` and `trusted` attributes
-                query = "UPDATE `IP_addresses` SET `verification` = CURRENT_DATE WHERE `script_key` = '{}'".format(
+                query = "UPDATE `IP_addresses` SET `verification` = datetime('now','localtime') WHERE `script_key` = '{}'".format(
                     ip["script_key"])
                 cur.execute(query)
                 #conn.commit()
