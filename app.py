@@ -161,7 +161,7 @@ def api_all():
     conn = sqlite3.connect('HTTP01_challenge_db.db')
     conn.row_factory = dict_factory
     cur = conn.cursor()
-    query = "SELECT * FROM IP_addresses WHERE username = {}".format(username)
+    query = "SELECT * FROM IP_addresses WHERE username = '{}' AND trusted = 1".format(username)
     #saves all rows in a dictionary named all_ip
     all_ip = cur.execute(query).fetchall()
 
