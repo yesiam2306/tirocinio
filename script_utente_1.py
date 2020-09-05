@@ -55,15 +55,8 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             print("Press Ctrl+C to exit")
 
 def run():
-
-    """
-    f = open("auth_page.html", "w")
-    f.write(page_content)
-    f.close()
-    """
-
     IP = get_ip_address()
-    print(IP)
+    print("Your IP: ", IP)
     PORT = 2323
 
     wanna_change = input("Port will be setted to 2323 by default, do you want to change it? (Y/n)\n")
@@ -79,23 +72,26 @@ def run():
     # it needs of the TCP address (IP address and a port number) and the handler
     # Passing an empty string as the ip address means that the server will be listening on
     # any network interface (all available IP addresses).
-    with socketserver.TCPServer((IP, int(PORT)), MyHandler) as httpd:
-        # serve_forever is a method on the TCPServer instance that starts the server and begins
-        # listening and responding to incoming requests.
-        # SimpleHTTPRequest is a default handler that search in the corrent directory a 'index.html' file
-        # and serves it.
-        print('\nStarting httpd...')
-        print('Ongoing check...')
-        print('This may take a few minutes (not more 30)')
-        print('Please, be patient')
-        print("We suggest you to try to access to the following page from an external "
-              "web net (e.g. 4G): http://{}:{}".format(IP, int(PORT)))
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            pass
-        httpd.server_close()
-        print('Stopping httpd...')
+    try:
+        with socketserver.TCPServer((IP, int(PORT)), MyHandler) as httpd:
+            # serve_forever is a method on the TCPServer instance that starts the server and begins
+            # listening and responding to incoming requests.
+            # SimpleHTTPRequest is a default handler that search in the corrent directory a 'index.html' file
+            # and serves it.
+            print('\nStarting httpd...')
+            print('Ongoing check...')
+            print('This may take a few minutes (not more 30)')
+            print('Please, be patient')
+            print("We suggest you to try to access to the following page from an external "
+                  "web net (e.g. 4G): http://{}:{}".format(IP, int(PORT)))
+            try:
+                httpd.serve_forever()
+            except KeyboardInterrupt:
+                pass
+            httpd.server_close()
+            print('Stopping httpd...')
+    except PermissionError:
+        print("Permission denied. Try with another port.")
 
 if __name__ == '__main__':
     run()

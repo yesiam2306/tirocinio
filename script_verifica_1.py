@@ -33,7 +33,7 @@ def run():
                     "AND trusted = 0 " \
                     "AND datetime(verification, '+3 day') < datetime('now'))"
     to_delete = cur.execute(query).fetchall()
-    #print(to_delete) #to debug
+
     for ip in to_delete:
         query = "DELETE FROM IP_addresses WHERE script_key = '{}'".format(ip["script_key"])
         cur.execute(query)
@@ -42,7 +42,6 @@ def run():
     #query to select the targets to verify
     query = "SELECT * FROM `IP_addresses` WHERE `verification` = ''"
     to_verify = cur.execute(query).fetchall()
-    #print(to_verify) #to debug
 
     #for each result it goes to the URL of its IP address, and controls what it contains
     for ip in to_verify:
@@ -67,16 +66,12 @@ def run():
             # we need a parser,Python built-in HTML parser is enough .
             soup = BeautifulSoup(resp.text, 'html.parser')
 
-            # l is the list which contains all the text
             for comments in soup.findAll(text=lambda text: isinstance(text, Comment)):
                 c = comments.extract()
-            #print(c)
-            #print("{}".format(ip["script_key"]))
 
-            # l contains the text of the page. If it's equal to the script key stored in the database
+            # c contains the text of the comment in the page. If it's equal to the script key stored in the database
             # the verification have been successful
             if str(c) == "{}".format(ip["script_key"]):
-                #print("yes")
                 #update the row setting `verification` and `trusted` attributes
                 query = "UPDATE `IP_addresses` SET `verification` = datetime('now','localtime') WHERE `script_key` = '{}'".format(
                     ip["script_key"])

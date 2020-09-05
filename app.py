@@ -1,10 +1,8 @@
-from flask import Flask, Blueprint, request, jsonify, make_response, abort
-from IPy import IP
-import time
-import sqlite3
-import ipaddress
 import random
+import sqlite3
 import string
+from IPy import IP
+from flask import Flask, Blueprint, request, jsonify, make_response, abort
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False #this is cause otherwise JSON's labels are sorted alphabetically
