@@ -30,7 +30,7 @@ def run():
                 "AND trusted = 0 " \
                 "AND datetime(creation, '+3 day') < datetime('now'))" \
                 "OR (verification <> '' " \
-                    "AND trusted = 0 " \
+                    "AND trusted = 1 " \
                     "AND datetime(verification, '+3 day') < datetime('now'))"
     to_delete = cur.execute(query).fetchall()
 
