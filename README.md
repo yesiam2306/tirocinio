@@ -1,6 +1,6 @@
 # tirocinio
 
-da setttare prima di iniziare
+da settare prima di iniziare
 
 ---------------------------------------------------------------------------------------------------------------
 #se  si vuole modificare l'indirizzo a cui far arrivare le richieste GET e POST
